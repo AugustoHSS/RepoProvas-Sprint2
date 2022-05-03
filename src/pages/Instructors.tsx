@@ -27,6 +27,7 @@ function Instructors() {
     TestByTeacher[]
   >([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [search, setSearch] = useState<string>("")
 
   useEffect(() => {
     async function loadPage() {
@@ -40,11 +41,24 @@ function Instructors() {
     loadPage();
   }, [token]);
 
+  function handleSearch() {
+    const filteredTests = teachersDisciplines.map((teachers) => console.log(teachers.teacher))
+    console.log(filteredTests)
+    console.log("clickei e mandei " + search)
+  }
+
   return (
     <>
       <TextField
         sx={{ marginX: "auto", marginBottom: "25px", width: "450px" }}
         label="Pesquise por pessoa instrutora"
+        value={search}
+        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
+        onKeyDown={(event) => {
+          if (event.key === "Enter") {
+            handleSearch();
+          }
+        }}
       />
       <Divider sx={{ marginBottom: "35px" }} />
       <Box
@@ -182,7 +196,6 @@ function Categories({
             />
 
           ))}
-        <Typography fontWeight="bold">teste</Typography>
       </Box>
     </>
   );

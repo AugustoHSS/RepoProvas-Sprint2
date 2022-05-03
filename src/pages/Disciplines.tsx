@@ -206,6 +206,11 @@ interface TestsProps {
   categoryId: number;
 }
 
+async function addView(test: any) {
+  await api.addView(test.id)
+  console.log("adicionado view")
+}
+
 function Tests({
   categoryId,
   testsWithTeachers: testsWithDisciplines,
@@ -216,14 +221,15 @@ function Tests({
         testsWithDisciplines.tests
           .filter((test) => testOfCategory(test, categoryId))
           .map((test) => (
-            <Typography key={test.id} color="#878787">
+            <Typography key={test.id} color="#878787" >
               <Link
+                onClick={() => addView(test)}
                 href={test.pdfUrl}
                 target="_blank"
                 underline="none"
                 color="inherit"
               >{`${test.name} (${testsWithDisciplines.teacherName}) `}</Link>
-              <span> visualizações </span>
+              <span> {test.views} visualizações</span>
             </Typography>
           ))
       )}
