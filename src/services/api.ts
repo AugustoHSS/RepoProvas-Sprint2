@@ -125,6 +125,11 @@ async function addView(testId: number) {
   return baseAPI.patch(`/tests/${testId}/add-view`);
 }
 
+async function getAllInstructors(token: string) {
+  const config = getConfig(token);
+  return baseAPI.get(`/instructors`, config);
+}
+
 const api = {
   signUp,
   signIn,
@@ -135,6 +140,7 @@ const api = {
   getInstructors,
   createTest,
   addView,
+  getAllInstructors
 };
 
 export default api;

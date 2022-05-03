@@ -13,6 +13,7 @@ import {
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import useAuth from "../hooks/useAuth";
+import Autocomplete from '@mui/material/Autocomplete';
 import api, {
   Category,
   TeacherDisciplines,
@@ -27,7 +28,9 @@ function Instructors() {
     TestByTeacher[]
   >([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [search, setSearch] = useState<string>("")
+  const [instructor, setInstructor] = useState<any>(null);
+  const [instructorsOption, setInstructorOption] = useState([]);
+  const [instructorInputValue, setInstructorInputValue] = useState('');
 
   useEffect(() => {
     async function loadPage() {
@@ -37,28 +40,34 @@ function Instructors() {
       setTeachersDisciplines(testsData.tests);
       const { data: categoriesData } = await api.getCategories(token);
       setCategories(categoriesData.categories);
+      const { data: instructorsData } = await api.getAllInstructors(token);
+      setInstructorOption(instructorsData.instructors)
     }
     loadPage();
   }, [token]);
 
-  function handleSearch() {
-    const filteredTests = teachersDisciplines.map((teachers) => console.log(teachers.teacher))
-    console.log(filteredTests)
-    console.log("clickei e mandei " + search)
-  }
+  const instructorOptions = instructorsOption?.map((instructor: any, i: any) => {
+    return {
+      id: i,
+      label: instructor.name
+    };
+  });
 
   return (
     <>
-      <TextField
+      <Autocomplete
         sx={{ marginX: "auto", marginBottom: "25px", width: "450px" }}
-        label="Pesquise por pessoa instrutora"
-        value={search}
-        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
-        onKeyDown={(event) => {
-          if (event.key === "Enter") {
-            handleSearch();
-          }
+        value={instructor}
+        onChange={(event, newValue: any) => {
+          setInstructor(newValue);
         }}
+        inputValue={instructorInputValue}
+        onInputChange={(event, newInputValue) => {
+          setInstructorInputValue(newInputValue);
+        }}
+        id="controllable-states-disciplines"
+        options={instructorOptions}
+        renderInput={(params) => <TextField {...params} label="Instrutor" />}
       />
       <Divider sx={{ marginBottom: "35px" }} />
       <Box
@@ -94,6 +103,7 @@ function Instructors() {
         <TeachersDisciplinesAccordions
           categories={categories}
           teachersDisciplines={teachersDisciplines}
+          search={instructor}
         />
       </Box>
     </>
@@ -103,35 +113,64 @@ function Instructors() {
 interface TeachersDisciplinesAccordionsProps {
   teachersDisciplines: TestByTeacher[];
   categories: Category[];
+  search: any;
 }
 
 function TeachersDisciplinesAccordions({
   categories,
   teachersDisciplines,
+  search,
 }: TeachersDisciplinesAccordionsProps) {
   const teachers = getUniqueTeachers(teachersDisciplines);
 
   return (
     <Box sx={{ marginTop: "50px" }}>
-      {teachers.map((teacher) => (
-        <Accordion sx={{ backgroundColor: "#FFF" }} key={teacher}>
-          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Typography fontWeight="bold">{teacher}</Typography>
-          </AccordionSummary>
-          <AccordionDetails>
-            {categories
-              .filter(doesCategoryHaveTests(teacher, teachersDisciplines))
-              .map((category) => (
-                <Categories
-                  key={category.id}
-                  category={category}
-                  teacher={teacher}
-                  teachersDisciplines={teachersDisciplines}
-                />
-              ))}
-          </AccordionDetails>
-        </Accordion>
-      ))}
+      {teachers.map((teacher) => {
+        if (search === null) {
+          return (
+            <Accordion sx={{ backgroundColor: "#FFF" }} key={teacher}>
+              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                <Typography fontWeight="bold">{teacher}</Typography>
+              </AccordionSummary>
+              <AccordionDetails>
+                {categories
+                  .filter(doesCategoryHaveTests(teacher, teachersDisciplines))
+                  .map((category) => (
+                    <Categories
+                      key={category.id}
+                      category={category}
+                      teacher={teacher}
+                      teachersDisciplines={teachersDisciplines}
+                    />
+                  ))}
+              </AccordionDetails>
+            </Accordion>
+          )
+        }
+        if (teacher === search?.label) {
+          return (
+            <Accordion sx={{ backgroundColor: "#FFF" }} key={teacher}>
+              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                <Typography fontWeight="bold">{teacher}</Typography>
+              </AccordionSummary>
+              <AccordionDetails>
+                {categories
+                  .filter(doesCategoryHaveTests(teacher, teachersDisciplines))
+                  .map((category) => (
+                    <Categories
+                      key={category.id}
+                      category={category}
+                      teacher={teacher}
+                      teachersDisciplines={teachersDisciplines}
+                    />
+                  ))}
+              </AccordionDetails>
+            </Accordion>
+          )
+        } else {
+          return ""
+        }
+      })}
     </Box>
   );
 }
@@ -206,17 +245,23 @@ interface TestsProps {
   tests: Test[];
 }
 
+async function addView(test: any) {
+  await api.addView(test.id)
+}
+
 function Tests({ tests, disciplineName }: TestsProps) {
   return (
     <>
       {tests.map((test) => (
         <Typography key={test.id} color="#878787">
           <Link
+            onClick={() => addView(test)}
             href={test.pdfUrl}
             target="_blank"
             underline="none"
             color="inherit"
           >{`${test.name} (${disciplineName})`}</Link>
+          <span> {test.views} visualizações</span>
         </Typography>
       ))}
     </>

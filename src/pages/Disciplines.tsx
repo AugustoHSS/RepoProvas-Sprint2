@@ -11,6 +11,7 @@ import {
   Typography,
 } from "@mui/material";
 import React, { useEffect, useState } from "react";
+import Autocomplete from '@mui/material/Autocomplete';
 import { useNavigate } from "react-router-dom";
 import useAuth from "../hooks/useAuth";
 import api, {
@@ -26,6 +27,9 @@ function Disciplines() {
   const { token } = useAuth();
   const [terms, setTerms] = useState<TestByDiscipline[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [disciplineOption, setDisciplineOption] = useState<any>([]);
+  const [discipline, setDiscipline] = useState(null);
+  const [disciplineInputValue, setDisciplineInputValue] = useState('');
 
   useEffect(() => {
     async function loadPage() {
@@ -35,15 +39,33 @@ function Disciplines() {
       setTerms(testsData.tests);
       const { data: categoriesData } = await api.getCategories(token);
       setCategories(categoriesData.categories);
+      const { data: disciplinesData } = await api.getDisciplines(token);
+      setDisciplineOption(disciplinesData.disciplines)
     }
     loadPage();
   }, [token]);
 
+  const disciplineOptions = disciplineOption?.map((discipline: any, i: any) => {
+    return {
+      id: i,
+      label: discipline.name
+    };
+  });
   return (
     <>
-      <TextField
+      <Autocomplete
         sx={{ marginX: "auto", marginBottom: "25px", width: "450px" }}
-        label="Pesquise por disciplina"
+        value={discipline}
+        onChange={(event, newValue: any) => {
+          setDiscipline(newValue);
+        }}
+        inputValue={disciplineInputValue}
+        onInputChange={(event, newInputValue) => {
+          setDisciplineInputValue(newInputValue);
+        }}
+        id="controllable-states-disciplines"
+        options={disciplineOptions}
+        renderInput={(params) => <TextField {...params} label="Disciplina" />}
       />
       <Divider sx={{ marginBottom: "35px" }} />
       <Box
@@ -76,7 +98,7 @@ function Disciplines() {
             Adicionar
           </Button>
         </Box>
-        <TermsAccordions categories={categories} terms={terms} />
+        <TermsAccordions categories={categories} terms={terms} search={discipline} />
       </Box>
     </>
   );
@@ -85,9 +107,10 @@ function Disciplines() {
 interface TermsAccordionsProps {
   categories: Category[];
   terms: TestByDiscipline[];
+  search: any;
 }
 
-function TermsAccordions({ categories, terms }: TermsAccordionsProps) {
+function TermsAccordions({ categories, terms, search }: TermsAccordionsProps) {
   return (
     <Box sx={{ marginTop: "50px" }}>
       {terms.map((term) => (
@@ -99,6 +122,7 @@ function TermsAccordions({ categories, terms }: TermsAccordionsProps) {
             <DisciplinesAccordions
               categories={categories}
               disciplines={term.disciplines}
+              search={search}
             />
           </AccordionDetails>
         </Accordion>
@@ -110,33 +134,60 @@ function TermsAccordions({ categories, terms }: TermsAccordionsProps) {
 interface DisciplinesAccordionsProps {
   categories: Category[];
   disciplines: Discipline[];
+  search: any;
 }
 
 function DisciplinesAccordions({
   categories,
   disciplines,
+  search,
 }: DisciplinesAccordionsProps) {
   if (disciplines.length === 0)
     return <Typography>Nenhuma prova para esse período...</Typography>;
 
   return (
     <>
-      {disciplines.map((discipline) => (
-        <Accordion
-          sx={{ backgroundColor: "#FFF", boxShadow: "none" }}
-          key={discipline.id}
-        >
-          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Typography fontWeight="bold">{discipline.name}</Typography>
-          </AccordionSummary>
-          <AccordionDetails>
-            <Categories
-              categories={categories}
-              teachersDisciplines={discipline.teacherDisciplines}
-            />
-          </AccordionDetails>
-        </Accordion>
-      ))}
+      {disciplines.map((discipline) => {
+        if (search === null) {
+          return (
+            <Accordion
+              sx={{ backgroundColor: "#FFF", boxShadow: "none" }}
+              key={discipline.id}
+            >
+              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                <Typography fontWeight="bold">{discipline.name}</Typography>
+              </AccordionSummary>
+              <AccordionDetails>
+                <Categories
+                  categories={categories}
+                  teachersDisciplines={discipline.teacherDisciplines}
+                />
+              </AccordionDetails>
+            </Accordion>
+          )
+        }
+        if (discipline.name === search.label) {
+          return (
+            <Accordion
+              sx={{ backgroundColor: "#FFF", boxShadow: "none" }}
+              key={discipline.id}
+            >
+              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                <Typography fontWeight="bold">{discipline.name}</Typography>
+              </AccordionSummary>
+              <AccordionDetails>
+                <Categories
+                  categories={categories}
+                  teachersDisciplines={discipline.teacherDisciplines}
+                />
+              </AccordionDetails>
+            </Accordion>
+          )
+        } else {
+          return ""
+        }
+      }
+      )}
     </>
   );
 }
@@ -208,7 +259,6 @@ interface TestsProps {
 
 async function addView(test: any) {
   await api.addView(test.id)
-  console.log("adicionado view")
 }
 
 function Tests({
